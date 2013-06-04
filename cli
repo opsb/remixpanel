@@ -11,11 +11,12 @@ module Cleanups
 			props = event["properties"]
 
 			normalise_distinct_id_keys(props)
-			flatten_causes(props)
+			normalise_cause(props)
+
 			replace_names(props)
 			remove_import_key(props)
 			replace_visit_distinct_id_with_account_id(event, props)
-			
+
 			event
 		end
 	end
@@ -24,7 +25,7 @@ module Cleanups
 		props["distinct_id"] = props.delete("distinctId") if props["distinctId"]
 	end
 
-	def flatten_causes(props)
+	def normalise_cause(props)
 		props["cause"] = props["cause"]["name"] if props["cause"].class == Hash
 	end
 
