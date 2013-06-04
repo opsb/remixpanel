@@ -35,8 +35,19 @@ module Cleanups
 	end	
 end
 
+module Reductions
+	def events
+		@events.map{ |event| event["event"] }
+	end
+
+	def causes
+		@events.map{ |event| event["properties"]["cause"] }
+	end
+end
+
 class MixpanelEvents
 	include Cleanups
+	include Reductions
 
 	def self.load(file_path)
 		events = []
@@ -53,18 +64,6 @@ class MixpanelEvents
 
 	def map(&block)
 		MixpanelEvents.new(@events.clone.map(&block))
-	end
-
-	def unique
-		@events.map{ |event| yield event }.uniq.sort
-	end
-
-	def events
-		@events.map{ |event| event["event"] }
-	end
-
-	def causes
-		@events.map{ |event| event["properties"]["cause"] }
 	end
 
 	def keep_if(&block)
