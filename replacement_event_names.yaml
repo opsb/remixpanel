@@ -1,0 +1,6 @@
+---
+completed_signup: signup:completed
+signup: signup:started
+install: signup:completed
+started_install: signup:started
+started_signup: signup:started

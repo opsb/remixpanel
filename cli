@@ -13,11 +13,12 @@ module Cleanups
 			normalise_distinct_id_keys(props)
 			normalise_cause(props)
 
-			replace_names(props)
+			replace_cause_names(props)
+			replace_event_names(event)
 			remove_import_key(props)
 			replace_visit_distinct_id_with_account_id(event, props)
 
-			event
+			event unless unwanted_event_names.include?(event["event"]) 
 		end
 	end
 
@@ -29,10 +30,15 @@ module Cleanups
 		props["cause"] = props["cause"]["name"] if props["cause"].class == Hash
 	end
 
-	def replace_names(props)
+	def replace_cause_names(props)
 		original = props["cause"]
 		props["cause"] = cause_name_replacements[original] || original
 	end
+
+	def replace_event_names(event)
+		original = event["event"]
+		event["event"] = event_name_replacements[original] || original
+	end	
 
 	def remove_import_key(props)
 		props.delete("$import")
@@ -45,9 +51,25 @@ module Cleanups
 		end
 	end
 
+	def unwanted_event_names
+		@transaction_event_names ||= [
+			"True", 
+			"transaction:created",
+			"transaction:confirmed",
+			"transaction:declined",
+			"transaction:pending",
+			"management:activate_account",
+			"login"
+		]
+	end
+
 	def cause_name_replacements
 		@cause_name_replacements ||= YAML.load(File.read("replacement_cause_names.yaml"))
 	end	
+
+	def event_name_replacements
+		@event_name_replacements ||= YAML.load(File.read("replacement_event_names.yaml"))
+	end
 end
 
 module Reductions
@@ -74,7 +96,7 @@ class MixpanelEvents
 	end
 
 	def initialize(events)
-		@events = events
+		@events = events.compact
 	end
 
 	def map(&block)
