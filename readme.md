@@ -1,0 +1,4 @@
+Usage
+=====
+
+    ruby ./cli
