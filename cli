@@ -6,27 +6,33 @@ require 'yaml'
 
 module Cleanups
 	def cleanup
-		flatten_causes.replace_names
-	end
-
-	def flatten_causes
 		map do |event|
-			if event["properties"]["cause"].class == Hash
-				event["properties"]["cause"] = event["properties"]["cause"]["name"]
-			end
+			event = event.clone
+			flatten_causes(event)
+			replace_names(event)
+			remove_import_key(event)
 			event
 		end
 	end
 
-	def replace_names
-		replacements = YAML.load(File.read("replacement_cause_names.yaml"))
-		map do |event|
-			original = event["properties"]["cause"]
-			event["properties"]["cause"] = replacements[original] || original
-			puts "#{original} => #{event["properties"]["cause"]}"
-			event
+	def flatten_causes(event)
+		if event["properties"]["cause"].class == Hash
+			event["properties"]["cause"] = event["properties"]["cause"]["name"]
 		end
 	end
+
+	def replace_names(event)
+		original = event["properties"]["cause"]
+		event["properties"]["cause"] = cause_name_replacements[original] || original
+	end
+
+	def remove_import_key(event)
+		event["properties"].delete("$import")
+	end
+
+	def cause_name_replacements
+		@cause_name_replacements ||= YAML.load(File.read("replacement_cause_names.yaml"))
+	end	
 end
 
 class MixpanelEvents
@@ -46,7 +52,7 @@ class MixpanelEvents
 	end
 
 	def map(&block)
-		MixpanelEvents.new(@events.map(&block))
+		MixpanelEvents.new(@events.clone.map(&block))
 	end
 
 	def unique
