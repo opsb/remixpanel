@@ -58,8 +58,13 @@ module Cleanups
 			"transaction:confirmed",
 			"transaction:declined",
 			"transaction:pending",
+			"transaction_created",
+			"transaction_confirmed",
+			"transaction_declined",
+			"transaction_pending",			
 			"management:activate_account",
-			"login"
+			"login",
+			"test"
 		]
 	end
 
@@ -120,7 +125,7 @@ end
 class MixpanelRemix < Thor
 	desc "unique_events FILE", "list events found in FILE"
 	def unique_events(file_path)
-		puts MixpanelEvents.load(file_path).events.uniq
+		puts MixpanelEvents.load(file_path).events.uniq.sort
 	end
 
 	desc "list_events FILE", "list all events found in FILE"
@@ -130,7 +135,7 @@ class MixpanelRemix < Thor
 
 	desc "unique_causes FILE", "list causes found in FILE"
 	def unique_causes(file_path)
-		puts MixpanelEvents.load(file_path).causes.uniq
+		puts MixpanelEvents.load(file_path).causes.uniq.sort
 	end
 
 	desc "list_causes FILE", "list all causes found in FILE"
