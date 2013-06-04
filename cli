@@ -8,26 +8,40 @@ module Cleanups
 	def cleanup
 		map do |event|
 			event = event.clone
-			flatten_causes(event)
-			replace_names(event)
-			remove_import_key(event)
+			props = event["properties"]
+
+			normalise_distinct_id_keys(props)
+			flatten_causes(props)
+			replace_names(props)
+			remove_import_key(props)
+			replace_visit_distinct_id_with_account_id(event, props)
+			
 			event
 		end
 	end
 
-	def flatten_causes(event)
-		if event["properties"]["cause"].class == Hash
-			event["properties"]["cause"] = event["properties"]["cause"]["name"]
+	def normalise_distinct_id_keys(props)
+		props["distinct_id"] = props.delete("distinctId") if props["distinctId"]
+	end
+
+	def flatten_causes(props)
+		props["cause"] = props["cause"]["name"] if props["cause"].class == Hash
+	end
+
+	def replace_names(props)
+		original = props["cause"]
+		props["cause"] = cause_name_replacements[original] || original
+	end
+
+	def remove_import_key(props)
+		props.delete("$import")
+	end
+
+	def replace_visit_distinct_id_with_account_id(event, props)
+		if event["event"] == "visit"
+			account_id = props["account_id"]
+			props["distinct_id"] = account_id if account_id
 		end
-	end
-
-	def replace_names(event)
-		original = event["properties"]["cause"]
-		event["properties"]["cause"] = cause_name_replacements[original] || original
-	end
-
-	def remove_import_key(event)
-		event["properties"].delete("$import")
 	end
 
 	def cause_name_replacements
