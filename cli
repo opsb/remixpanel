@@ -2,8 +2,36 @@ $stdout.sync = true
 
 require 'json'
 require 'thor'
+require 'yaml'
+
+module Cleanups
+	def cleanup
+		flatten_causes.replace_names
+	end
+
+	def flatten_causes
+		map do |event|
+			if event["properties"]["cause"].class == Hash
+				event["properties"]["cause"] = event["properties"]["cause"]["name"]
+			end
+			event
+		end
+	end
+
+	def replace_names
+		replacements = YAML.load(File.read("replacement_cause_names.yaml"))
+		map do |event|
+			original = event["properties"]["cause"]
+			event["properties"]["cause"] = replacements[original] || original
+			puts "#{original} => #{event["properties"]["cause"]}"
+			event
+		end
+	end
+end
 
 class MixpanelEvents
+	include Cleanups
+
 	def self.load(file_path)
 		events = []
 		File.readlines(file_path).each do |line|
@@ -15,6 +43,10 @@ class MixpanelEvents
 
 	def initialize(events)
 		@events = events
+	end
+
+	def map(&block)
+		MixpanelEvents.new(@events.map(&block))
 	end
 
 	def unique
@@ -64,7 +96,7 @@ class MixpanelRemix < Thor
 		puts MixpanelEvents.load(file_path).causes
 	end
 
-	desc "include_events EVENT_NAMES", "exclude specified events"
+	desc "include_events FILE EVENT_NAMES", "exclude specified events"
 	def include_events(file_path, comma_separated_event_names)
 		event_names = comma_separated_event_names.split(",")
 		
@@ -75,7 +107,7 @@ class MixpanelRemix < Thor
 		puts kept.to_s
 	end
 
-	desc "exclude_events EVENT_NAMES", "include specified events"
+	desc "exclude_events FILE EVENT_NAMES", "include specified events"
 	def exclude_events(file_path, comma_separated_event_names)
 		event_names = comma_separated_event_names.split(",")
 		
@@ -84,6 +116,11 @@ class MixpanelRemix < Thor
 		end
 
 		puts kept.to_s
+	end
+
+	desc "cleanup FILE", "cleanup data"
+	def cleanup(file_path)
+		puts MixpanelEvents.load(file_path).cleanup.to_s
 	end
 
 end
